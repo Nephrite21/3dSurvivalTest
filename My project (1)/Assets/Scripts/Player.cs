@@ -5,18 +5,29 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
     public float speed;
+    public float sprintCooldownduration;
+    public float sprintSpeed;
+    public float sprintDuration;
+    float sprintCooldown;
     float hAxis;
     float vAxis;
     bool sprintDown;
+    bool sprintStatus =false;
 
     Vector3 moveVec;
-    Vector3 sprintVec;
 
     Animator anim;
+    private Rigidbody charRigidbody;
+
 
     void Awake()
     {
         anim= GetComponentInChildren<Animator>();
+    }
+
+    void Start()
+    {
+        charRigidbody = GetComponentInChildren<Rigidbody>();
     }
 
     void Update()
@@ -25,6 +36,8 @@ public class Player : MonoBehaviour
         MoveCharactorByInput();
         ChangeCharactorStatus();
     }
+
+
 
     void GetInput()
     {
@@ -43,15 +56,53 @@ public class Player : MonoBehaviour
         sprintDown = Input.GetButtonDown("Sprint");
     }
 
+
     void MoveCharactorByInput()
     {
+        MovePlanarrly();
+        if (sprintDown && IsSprintOn())
+        {
+            SprintAndSetCooldown();
+        }
+        if (!IsSprintOn())
+        {
+            sprintCooldown += Time.deltaTime;
+        }
+    }
+
+    void MovePlanarrly()
+    {
         moveVec = new Vector3(hAxis, 0, vAxis).normalized;
-        transform.position += speed * Time.deltaTime * moveVec;
+        charRigidbody.velocity = speed * moveVec;
         transform.LookAt(transform.position + moveVec);
+    }
+
+    void SprintAndSetCooldown()
+    {
+        sprintCooldown = 0;
+        speed *= sprintSpeed;
+        sprintStatus = true;
+        Invoke(nameof(SprintOut), sprintDuration);
+    }
+
+    void SprintOut()
+    {
+        speed /= sprintSpeed;
+        sprintStatus = false;
+    }
+
+    bool IsSprintOn()
+    {
+        if (sprintCooldown >= sprintCooldownduration)
+        {
+            return true;
+        }
+        else { return false; }
     }
 
     void ChangeCharactorStatus()
     {
-        anim.SetBool("isWalk", moveVec != Vector3.zero);
+        anim.SetBool("isSprint", sprintStatus == true && moveVec != Vector3.zero);
+        anim.SetBool("isWalk", sprintStatus == false && moveVec != Vector3.zero);
     }
 }
